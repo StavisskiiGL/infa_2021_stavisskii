@@ -4,7 +4,7 @@ from random import randint
 
 pygame.init()
 
-FPS = 30
+FPS = 60
 screen = pygame.display.set_mode((1200, 700))
 
 RED = (255, 0, 0)
@@ -17,20 +17,34 @@ BLACK = (0, 0, 0)
 COLORS = [RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN]
 
 
+def move_ball(params):
+    new_params = (params[0] + params[6] / FPS, params[1] + params[7] / FPS, params[2], params[3], params[4], params[5], params[6], params[7])
+    screen.fill(BLACK)
+    circle(screen, (new_params[2], new_params[3], new_params[4]), (new_params[0], new_params[1]), new_params[5])
+    pygame.display.update()
+    return new_params
+
+
 def new_ball():
     """ рисует новый шарик """
-    global x, y, r
-    x = randint(100, 1100)
-    y = randint(100, 700)
     r = randint(10, 100)
+    x = randint(r, 1200 - r)
+    y = randint(r, 700 - r)
+    v_y = randint(-500, 500)
+    v_x = randint(-500, 500)
     color = COLORS[randint(0, 5)]
     circle(screen, color, (x, y), r)
+    params = (x, y, color[0], color[1], color[2], r, v_x, v_y)
+    return params
 
 
-def click(counter):
+def click(counter, params):
     """Проводит операции, связанные с реагированием программы на нажатие кнопки
         counter - текущий счетчик попаданий по шарику
     """
+    x = params[0]
+    y = params[1]
+    r = params[5]
     global clicked
     print('Click!')
     if (pygame.mouse.get_pos()[0] - x) ** 2 + (pygame.mouse.get_pos()[1] - y) ** 2 <= r ** 2:
@@ -43,11 +57,12 @@ def click(counter):
     return counter
 
 
+clicked = False  # булевое значение, определяющее нажали ли мы конпку мыши"
+params = new_ball()
+
 clock = pygame.time.Clock()
 finished = False
 counter = 0  # счетчик
-clicked = False  # булевое значение, определяющее нажали ли мы конпку мыши
-new_ball()
 pygame.display.update()
 
 while not finished:
@@ -56,11 +71,21 @@ while not finished:
         if event.type == pygame.QUIT:
             finished = True
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            counter = click(counter)
+            counter = click(counter, params)
     if clicked:
         screen.fill(BLACK)
-        new_ball()
+        params = new_ball()
         pygame.display.update()
         clicked = False
+    else:
+        if params[1] - params[5] <= 0:
+            params = (params[0], params[1], params[2], params[3], params[4], params[5], randint(-500, 500), randint(100, 500))
+        if params[1] + params[5] >= 700:
+            params = (params[0], params[1], params[2], params[3], params[4], params[5], randint(-500, 500), randint(-500, -100))
+        if params[0] - params[5] <= 0:
+            params = (params[0], params[1], params[2], params[3], params[4], params[5], randint(100, 500), randint(-500, 500))
+        if params[0] + params[5] >= 1200:
+            params = (params[0], params[1], params[2], params[3], params[4], params[5], randint(-500, -100), randint(-500, 500))
+        params = move_ball(params)
 
 pygame.quit()
