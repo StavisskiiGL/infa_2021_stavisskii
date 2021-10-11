@@ -20,7 +20,9 @@ P_LIST = [0]
 
 def move_ball(params):
     circle(screen, BLACK, (params[0], params[1]), params[5])
-    new_params = (params[0] + params[6] / FPS, params[1] + params[7] / FPS, params[2], params[3], params[4], params[5], params[6], params[7])
+    new_params = (
+    params[0] + params[6] / FPS, params[1] + params[7] / FPS, params[2], params[3], params[4], params[5], params[6],
+    params[7])
     circle(screen, (new_params[2], new_params[3], new_params[4]), (new_params[0], new_params[1]), new_params[5])
     pygame.display.update()
     return new_params
@@ -42,23 +44,24 @@ def new_ball():
 def click(counter, params):
     """Проводит операции, связанные с реагированием программы на нажатие кнопки
         counter - текущий счетчик попаданий по шарику
+        params - кортеж с данными о проверяемом шарике
     """
+    results = [0, 0]
     x = params[0]
     y = params[1]
     r = params[5]
     global clicked
-    print('Click!')
     if (pygame.mouse.get_pos()[0] - x) ** 2 + (pygame.mouse.get_pos()[1] - y) ** 2 <= r ** 2:
         counter += 1
         clicked = True
         print("You got a hit! Total number of strikes:", counter)
-    else:
-        print("You missed! Try again. Total number of strikes:", counter)
-        clicked = False
     return counter
 
 
-clicked = True  # булевое значение, определяющее нажали ли мы конпку мыши"
+print("Select and type difficulty level : 1; 2; 3; 4; 5; 6; 8; 10")
+level = int(input())
+time = 1
+clicked = False  # булевое значение, определяющее нажали ли мы конпку мыши"
 P_LIST[0] = new_ball()
 
 clock = pygame.time.Clock()
@@ -77,25 +80,30 @@ while not finished:
                 counter = click(counter, P_LIST[i])
                 if counter > start:
                     circle(screen, (0, 0, 0), (P_LIST[i][0], P_LIST[i][1]), P_LIST[i][5])
-                    P_LIST[i] = new_ball()
-                    P_LIST.append(new_ball())
+                    P_LIST.pop(i)
                     break
-    if not clicked:
+            if not clicked:
+                print("You missed! Try again.")
+    if time % (FPS / level) == 0:
         P_LIST.append(new_ball())
 
     for i in range(0, len(P_LIST)):
         params = P_LIST[i]
         if params[1] - params[5] <= 0:
-                params = (params[0], params[1], params[2], params[3], params[4], params[5], randint(-500, 500), randint(100, 500))
+            params = (
+            params[0], params[1], params[2], params[3], params[4], params[5], randint(-500, 500), randint(100, 500))
         if params[1] + params[5] >= 700:
-                params = (params[0], params[1], params[2], params[3], params[4], params[5], randint(-500, 500), randint(-500, -100))
+            params = (
+            params[0], params[1], params[2], params[3], params[4], params[5], randint(-500, 500), randint(-500, -100))
         if params[0] - params[5] <= 0:
-                params = (params[0], params[1], params[2], params[3], params[4], params[5], randint(100, 500), randint(-500, 500))
+            params = (
+            params[0], params[1], params[2], params[3], params[4], params[5], randint(100, 500), randint(-500, 500))
         if params[0] + params[5] >= 1200:
-            params = (params[0], params[1], params[2], params[3], params[4], params[5], randint(-500, -100), randint(-500, 500))
+            params = (
+            params[0], params[1], params[2], params[3], params[4], params[5], randint(-500, -100), randint(-500, 500))
         params = move_ball(params)
         P_LIST[i] = params
-    clicked = True
-
+    clicked = False
+    time += 1
 
 pygame.quit()
