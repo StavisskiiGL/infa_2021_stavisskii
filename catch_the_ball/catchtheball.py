@@ -1,16 +1,12 @@
-from math import sqrt
-from math import sin
-from math import cos
+import math
+from math import sqrt, sin, cos
 
 import pygame
-import math
 from pygame.draw import *
 from random import randint, random
 
-pygame.init()
 
 FPS = 240
-screen = pygame.display.set_mode((1200, 700))
 
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
@@ -29,13 +25,15 @@ def move_ball(params):
         params - кортеж параметров старого состояния шарика
         new_params - кортеж параметров нового состояния шарика
     """
-    circle(screen, BLACK, (params[0], params[1]), params[5])
     new_params = (
         params[0] + params[6] / FPS, params[1] + params[7] / FPS, params[2], params[3], params[4], params[5], params[6],
         params[7])
-    circle(screen, (new_params[2], new_params[3], new_params[4]), (new_params[0], new_params[1]), new_params[5])
-    pygame.display.update()
     return new_params
+
+def draw_ball(params):
+    """ отображает один шарик """
+    circle(screen, (params[2], params[3], params[4]),
+           (params[0], params[1]), params[5])
 
 
 def area_triangle_a(x_1, y_1, x_2, y_2, x_3, y_3, a):
@@ -55,7 +53,6 @@ def move_triangle(params):
         params - кортеж параметров старого состояния треугольника
         new_params - кортеж параметров нового состояния треугольника
     """
-    polygon(screen, BLACK, [(params[0], params[1]), (params[2], params[3]), (params[4], params[5])])
     x_m_new = params[14] + params[10] / FPS
     y_m_new = params[15] + params[11] / FPS
     phi_new = params[12] + params[13] / FPS
@@ -65,10 +62,18 @@ def move_triangle(params):
     y_2_new = y_m_new + sqrt(3) / 3 * params[9] * cos(math.pi / 3 - phi_new)
     x_3_new = x_m_new + sqrt(3) / 3 * params[9] * sin(phi_new)
     y_3_new = y_m_new - sqrt(3) / 3 * params[9] * cos(phi_new)
-    polygon(screen, (params[6], params[7], params[8]), [(x_1_new, y_1_new), (x_2_new, y_2_new), (x_3_new, y_3_new)])
     new_params = (x_1_new, y_1_new, x_2_new, y_2_new, x_3_new, y_3_new, params[6], params[7], params[8], params[9],
                   params[10], params[11], phi_new, params[13], x_m_new, y_m_new)
     return new_params
+
+
+def draw_triangle(params):
+    """ отображает один треугольник """
+    #polygon(screen, (params[6], params[7], params[8]), [(x_1_new, y_1_new), (x_2_new, y_2_new), (x_3_new, y_3_new)])
+    polygon(screen, (params[6], params[7], params[8]),
+            [(params[0], params[1]),
+             (params[2], params[3]),
+             (params[4], params[5])])
 
 
 def new_ball():
@@ -149,8 +154,11 @@ def click_triangle(counter, params):
     return counter
 
 
-print("Select and type difficulty level : 1; 2; 3; 4; 5; 6; 8; 10")
-level = int(input())
+pygame.init()
+screen = pygame.display.set_mode((1200, 700))
+
+# print("Select and type difficulty level : 1; 2; 3; 4; 5; 6; 8; 10")
+level = 1  # int(input())
 time = 1
 clicked = False  # булевое значение, определяющее попали ли мы по какой-либо фигуре или нет"
 P_LIST[0] = new_ball()
@@ -212,6 +220,14 @@ while not finished:
         params = T_LIST[i]
         params = move_triangle(params)
         T_LIST[i] = params
+
+    # отображение всех объектов
+    screen.fill(BLACK)
+    for ball in P_LIST:
+        draw_ball(ball)
+    for triangle in T_LIST:
+        draw_triangle(triangle)
+    pygame.display.update()
 
     clicked = False
     time += 1
