@@ -8,4 +8,4 @@ CYAN = (0, 255, 255)
 BLACK = (0, 0, 0)
 COLORS = [RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN]
 
-FPS = 240  # НА САМОМ ДЕЛЕ ЕМУ ТУТ НЕ МЕСТО!
+FPS = 240  # НА САМОМ ДЕЛЕ ЕМУ ТУТ НЕ МЕСТО! (а может и нет)

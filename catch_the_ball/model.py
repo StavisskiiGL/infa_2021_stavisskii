@@ -1,21 +1,21 @@
 import math
 from math import sqrt, sin, cos
 from random import randint, random
-
 from colors import *
 
 
 FPS = 240
 level = 1
-counter = 0  # очки
+clicked = False  # булевое значение, определяющее попали ли мы по какой-либо фигуре или нет"
+counter = 0
 
 
 def init():
-    global P_LIST, T_LIST, time, clicked
-    P_LIST = [_new_ball()]
-    T_LIST = []
+    """ Создание основных массивов и счетчиков"""
+    global CIRCLE_LIST, TRIANGLE_LIST, time, clicked
+    CIRCLE_LIST = [_new_ball()]
+    TRIANGLE_LIST = []
     time = 1
-    clicked = False  # булевое значение, определяющее попали ли мы по какой-либо фигуре или нет"
 
 
 def _move_ball(params):
@@ -90,16 +90,19 @@ def _new_triangle():
     return params
 
 
-def tick():
-    global P_LIST, T_LIST, time, clicked
+def tick(level):
+    """ Функция, применяющая к модели ее изменения во времени
+        level - уровень релаксации от 1 до 10
+    """
+    global CIRCLE_LIST, TRIANGLE_LIST, time, clicked
     # породить новые игровые объекты (по времени)
     if time % (FPS / level) == 0:
-        P_LIST.append(_new_ball())
+        CIRCLE_LIST.append(_new_ball())
     if time % (3 * FPS / level) == 0:
-        T_LIST.append(_new_triangle())
+        TRIANGLE_LIST.append(_new_triangle())
 
-    for i in range(0, len(P_LIST)):
-        params = P_LIST[i]
+    for i in range(0, len(CIRCLE_LIST)):
+        params = CIRCLE_LIST[i]
         if params[1] - params[5] <= 0:
             params = (
                 params[0], params[1], params[2], params[3], params[4], params[5], randint(-500, 500), randint(100, 500))
@@ -115,12 +118,12 @@ def tick():
                 params[0], params[1], params[2], params[3], params[4], params[5], randint(-500, -100),
                 randint(-500, 500))
         params = _move_ball(params)
-        P_LIST[i] = params
+        CIRCLE_LIST[i] = params
 
-    for i in range(0, len(T_LIST)):
-        params = T_LIST[i]
+    for i in range(0, len(TRIANGLE_LIST)):
+        params = TRIANGLE_LIST[i]
         params = _move_triangle(params)
-        T_LIST[i] = params
+        TRIANGLE_LIST[i] = params
 
     clicked = False
     time += 1
@@ -133,6 +136,7 @@ def _area_triangle_a(x_1, y_1, x_2, y_2, x_3, y_3, a):
         x_2, y_2 - соответственные координаты вершины (2)
         x_3, y_3 - соответственные координаты вершины (3)
         a - длина стороны, привязанной к вершинам (2) и (3)
+        :return: плошадь соответственного координатам и стороне треугольника
     """
     p = (a + sqrt((x_1 - x_2) ** 2 + (y_1 - y_2) ** 2) + sqrt((x_1 - x_3) ** 2 + (y_1 - y_3) ** 2)) / 2
     return sqrt(
@@ -143,6 +147,8 @@ def _click_circle(counter, params, mouse_pos):
     """ Проводит операции, связанные с реагированием программы на нажатие кнопки
         counter - текущий счетчик попаданий по фигурам
         params - кортеж с параметрами проверяемого шарика
+        mouse_pos - координаты курсора мыши на экране
+        :return: количество очков
     """
     x = params[0]
     y = params[1]
@@ -159,35 +165,87 @@ def _click_triangle(counter, params, mouse_pos):
     """ Проводит операции, связанные с реагированием программы на нажатие кнопки
         counter - текущий счетчик попаданий по фигурам
         params - кортеж с параметрами проверяемого треугольника
+        mouse_pos - координаты курсора мыши на экране
         :return: количество очков
     """
     global clicked
-    if abs((area_triangle_a(mouse_pos[0], mouse_pos[1], params[0], params[1], params[2],
+    if abs((_area_triangle_a(mouse_pos[0], mouse_pos[1], params[0], params[1], params[2],
                             params[3], params[9]) + _area_triangle_a(mouse_pos[0],
                                                                      mouse_pos[1], params[2], params[3],
-                                                                     params[4], params[5], params[9]) + area_triangle_a(
+                                                                     params[4], params[5], params[9]) + _area_triangle_a(
             mouse_pos[0], mouse_pos[1], params[0], params[1], params[4], params[5],
             params[9]) - sqrt(3) / 4 * (params[9]) ** 2)) <= 0.1:
+        counter +=3
         print("Nice hit! Total number of strikes:", counter)
         clicked = True
-        return 3  # количество очков за успешное попадание
-    return 0
+    return counter
 
 
 def handler(mouse_pos):
+    """ Передает действия игрока модели
+        mouse_pos - координаты курсора мыши на экране
+    """
+    global counter, clicked
     start = counter
-    for i in range(0, len(P_LIST)):
-        counter = _click_circle(counter, P_LIST[i])
+    for i in range(0, len(CIRCLE_LIST)):
+        counter = _click_circle(counter, CIRCLE_LIST[i], mouse_pos)
         if counter > start:
-            circle(screen, (0, 0, 0), (P_LIST[i][0], P_LIST[i][1]), P_LIST[i][5])
-            P_LIST.pop(i)
+            CIRCLE_LIST.pop(i)
             break
     start = counter
-    for i in range(0, len(T_LIST)):
-        counter = _click_triangle(counter, T_LIST[i])
+    for i in range(0, len(TRIANGLE_LIST)):
+        counter = _click_triangle(counter, TRIANGLE_LIST[i], mouse_pos)
         if counter > start:
-            polygon(screen, (0, 0, 0), [(T_LIST[i][0], T_LIST[i][1]), (T_LIST[i][2], T_LIST[i][3]), (T_LIST[i][4], T_LIST[i][5])])
-            T_LIST.pop(i)
+            TRIANGLE_LIST.pop(i)
             break
     if not clicked:
         print("You missed! Try again.")
+    clicked = False
+
+
+def _leaderboard_update(Name):
+    """ Считывает и обновляет таблицу лидеров
+        Name - имя игрока
+    """
+    global counter
+    len = 0
+    LEADER = []
+    file = open('Leaderboards.txt', 'r')
+    for line in file:
+        LEADER.append([line.split(' - ')[0], int(line.split(' - ')[1])])
+        len += 1
+
+    for i in range(0, len):
+            if LEADER[i][0] == Name and LEADER[i][1] >= counter:
+                return LEADER
+            if LEADER[i][0] == Name and LEADER[i][1] < counter:
+                LEADER.pop(i)
+                len -= 1
+                for j in range(0, len):
+                    if LEADER[j][1] < counter:
+                        LEADER = LEADER[0:j] + [[Name, counter]] + LEADER[j:]
+                        return LEADER
+
+    for i in range(0, len):
+        if LEADER[i][1] < counter:
+            LEADER = LEADER[0:i] + [[Name, counter]] + LEADER[i:]
+            return LEADER
+        if LEADER[i][1] == counter:
+            LEADER = LEADER[0:i+1] + [[Name, counter]] + LEADER[i+1:]
+            return LEADER
+
+    LEADER.append([Name, counter])
+    return LEADER
+
+
+def write_leaderboard(Name):
+    """ Записывает обновленную таблицу лидеров в текстовый файл Leaderboards.txt
+        Name - имя игрока
+    """
+    TABLE = _leaderboard_update(Name)
+    file = open('Leaderboards.txt', 'w')
+    for line in TABLE:
+        file.write(line[0] + " - " + str(line[1]) + '\n')
+    return
+
+
