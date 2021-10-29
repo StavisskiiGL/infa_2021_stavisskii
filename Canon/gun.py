@@ -1,14 +1,11 @@
 import math
-from math import cos
-from math import sin
-from math import atan
 from random import choice, randint
 
 import pygame
 from pygame.draw import *
 from pygame.draw import polygon
 
-FPS = 30
+FPS = 60
 
 RED = 0xFF0000
 BLUE = 0x0000FF
@@ -36,7 +33,7 @@ class Ball:
         self.screen = screen
         self.x = xc + len * math.cos(an)
         self.y = yc - len * math.sin(an)
-        self.r = 10
+        self.r = 15
         self.vx = 0
         self.vy = 0
         self.ay = 1
@@ -45,6 +42,7 @@ class Ball:
         self.out_y = False
         self.out_x = False
         self.counter = 0
+        self.time = 0
 
     def move(self):
         """Переместить мяч по прошествии единицы времени.
@@ -69,7 +67,7 @@ class Ball:
             self.ay = 1
         if WIDTH - self.r > self.x > self.r:
             self.out_x = False
-        if abs(self.vy) <= 1 and abs(self.y - (HEIGHT - self.r)) <= 0.1:
+        if abs(self.vy) <= 2 and abs(self.y - (HEIGHT - self.r)) <= 0.1:
             self.y = HEIGHT - self.r
             self.vy = 0
             self.ay = 0
@@ -115,15 +113,13 @@ class Gun:
         Происходит при отпускании кнопки мыши.
         Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
         """
-        global balls, bullet
-        bullet += 1
+        global balls
         self.xc = 40
         self.yc = 450
         new_ball = Ball(self.screen, self.xc, self.yc, self.len, self.an)
-        new_ball.r += 5
         self.an = math.atan2((-event.pos[1]+new_ball.y), (event.pos[0]-new_ball.x))
-        new_ball.vx = self.f2_power * math.cos(self.an)
-        new_ball.vy = - self.f2_power * math.sin(self.an)
+        new_ball.vx = self.f2_power * math.cos(self.an) * 1/2
+        new_ball.vy = - self.f2_power * math.sin(self.an) * 1/2
         balls.append(new_ball)
         self.f2_on = 0
         self.f2_power = 10
@@ -160,24 +156,46 @@ class Gun:
 
 
 class Target:
-    def __init__(self, screen):
+    global screen
+
+    def __init__(self):
         self.points = 0
         self.live = 1
         self.x = self.y = self.r = 0
         self.color = 0
         self.new_target()
+        self.vy = 0
+        self.h = 0
+
+    def set_dest(self):
+        self.h = randint(self.r, HEIGHT - self.r - 30)
+        if self.y > self.h:
+            self.vy = randint(-10, -5)
+        if self.y < self.h:
+            self.vy = randint(5, 10)
+
+    def move_target(self):
+        if self.vy < 0:
+            if self.y < self.h:
+                self.set_dest()
+                return
+        if self.vy > 0:
+            if self.y > self.h:
+                self.set_dest()
+                return
+        self.y += self.vy
 
     def new_target(self):
         """ Инициализация новой цели. """
         x = self.x = randint(600, 780)
         y = self.y = randint(300, 550)
-        r = self.r = randint(2, 50)
+        r = self.r = randint(10, 50)
         color = self.color = choice(GAME_COLORS)
         self.live = 1
 
-    def hit(self, points=1):
+    def hit(self):
         """Попадание шарика в цель."""
-        self.points += points
+        self.points += 1
 
     def draw(self):
         circle(screen, self.color, [self.x, self.y], self.r)
@@ -185,23 +203,37 @@ class Target:
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-bullet = 0
+points = 0
+time = 1
 balls = []
 targets = []
 
 clock = pygame.time.Clock()
 gun = Gun(screen)
-targets.append(Target(screen))
-targets.append(Target(screen))
+targets.append(Target())
+targets.append(Target())
 finished = False
 
+for t in targets:
+    t.set_dest()
+
 while not finished:
+    Nb = 0
+    fontObj = pygame.font.Font('freesansbold.ttf', 50)
+    textSurfaceObj = fontObj.render('Your score : ' + str(points), True, [0, 0, 0], [255, 255, 0])
+    textRectObj = textSurfaceObj.get_rect()
+    textRectObj.center = (200, 100)
     screen.fill(WHITE)
+    screen.blit(textSurfaceObj, textRectObj)
     gun.draw()
     for t in targets:
         t.draw()
     for b in balls:
+        if b.time % 300 == 0:
+            balls.pop(Nb)
+            pass
         b.draw()
+        Nb += 1
 
     pygame.display.update()
     clock.tick(FPS)
@@ -217,11 +249,18 @@ while not finished:
 
     for b in balls:
         b.move()
+        b.time += 1
         for t in targets:
             if b.hittest(t) and t.live:
                 t.live = 0
-                t.hit()
+                points += 1
                 t.new_target()
+                t.set_dest()
     gun.power_up()
+
+    for t in targets:
+        t.move_target()
+
+    time += 1
 
 pygame.quit()
