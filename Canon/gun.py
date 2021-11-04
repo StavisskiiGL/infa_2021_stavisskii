@@ -1,6 +1,8 @@
 import math
 from random import choice, randint
 
+import keyboard
+
 import pygame
 from pygame.draw import *
 from pygame.draw import polygon
@@ -103,6 +105,7 @@ class Gun:
         self.x1 = self.y1 = self.x2 = self.y2 = self.x3 = self.y3 = self.x4 = self.y4 = 0
         self.xc = 40
         self.yc = 450
+        self.event = 0
 
     def fire2_start(self, event):
         self.f2_on = 1
@@ -114,8 +117,6 @@ class Gun:
         Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
         """
         global balls
-        self.xc = 40
-        self.yc = 450
         new_ball = Ball(self.screen, self.xc, self.yc, self.len, self.an)
         self.an = math.atan2((-event.pos[1]+new_ball.y), (event.pos[0]-new_ball.x))
         new_ball.vx = self.f2_power * math.cos(self.an) * 1/2
@@ -123,15 +124,22 @@ class Gun:
         balls.append(new_ball)
         self.f2_on = 0
         self.f2_power = 10
+        self.event = event
 
     def targeting(self, event):
         """Прицеливание. Зависит от положения мыши."""
         if event:
-            self.an = math.atan((-event.pos[1]+self.yc) / (event.pos[0]-self.xc))
+            if event.pos[0] > self.xc:
+                self.an = math.atan((-event.pos[1]+self.yc) / (event.pos[0]-self.xc))
+            if event.pos[0] < self.xc:
+                self.an = math.pi + math.atan((-event.pos[1] + self.yc) / (event.pos[0] - self.xc))
+            if event.pos[0] == self.xc:
+                self.an = math.pi / 2
         if self.f2_on:
             self.color = RED
         else:
             self.color = GREY
+        self.event = event
 
     def draw(self):
         self.x1 = self.xc + self.len * math.cos(self.an) + math.sin(self.an) * self.width
@@ -153,6 +161,19 @@ class Gun:
         else:
             self.color = GREY
             self.len = 10
+
+    def move(self):
+        if self.xc < WIDTH * 3/5:
+            if keyboard.is_pressed('w'):
+                self.yc -= 5
+            if keyboard.is_pressed('a'):
+                self.xc -= 5
+            if keyboard.is_pressed('s'):
+                self.yc += 5
+            if keyboard.is_pressed('d'):
+                self.xc += 5
+        else:
+            self.xc = 40
 
 
 class Target:
@@ -247,7 +268,9 @@ while not finished:
         elif event.type == pygame.MOUSEMOTION:
             gun.targeting(event)
 
+    Nb = -1
     for b in balls:
+        Nb += 0
         b.move()
         b.time += 1
         for t in targets:
@@ -256,10 +279,15 @@ while not finished:
                 points += 1
                 t.new_target()
                 t.set_dest()
+                balls.pop(Nb)
+                break
+
     gun.power_up()
 
     for t in targets:
         t.move_target()
+
+    gun.move()
 
     time += 1
 
